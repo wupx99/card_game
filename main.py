@@ -113,8 +113,10 @@ class CardGame:
                 btn.config(state=tk.DISABLED)
             btn.pack(side=tk.LEFT, padx=2)
         
-        if not player_match :
-            self.player_turn = True
+        if not player_match:
+            self.show_message("游戏信息：你 - 没有匹配的牌")
+            self.player_turn = False
+            self.master.after(1000, self.computer_move)
         
         # 更新信息
         self.deck_label.config(text=f"牌堆剩余: {len(self.deck)}")
@@ -124,6 +126,7 @@ class CardGame:
         print("player_move")
         if not self.player_turn:
             self.show_message("游戏信息：电脑 - 请等待电脑操作")
+            self.update_ui()
             return
 
         matched_card = self.find_match(selected_card)
@@ -147,15 +150,15 @@ class CardGame:
         
         self.check_game_over()
         self.update_ui()
-
     
     def computer_move(self):
         print("computer_move")
         if self.player_turn:
             print("computer_move - player_turn!")
+            self.update_ui()
             return
 
-        find_match = False
+        computer_find_match = False
         current_score = 0
         for card in self.computer_hand:
             matched_card = self.find_match(card)
@@ -170,10 +173,10 @@ class CardGame:
                 self.replenish_cards()
                 self.show_message(f"游戏信息：电脑 - 匹配了 {card} 和 {matched_card}, 获得 {current_score} 分")
                 self.computer_score += current_score
-                find_match = True
+                computer_find_match = True
                 break
         
-        if not find_match:
+        if not computer_find_match:
             self.show_message("游戏信息：电脑 - 电脑没有可以匹配的牌")
         
         self.player_turn = True
@@ -210,16 +213,30 @@ class CardGame:
 
     
     def check_game_over(self):
-        if not self.player_hand or not self.computer_hand or (not self.find_any_match()):
-            winner = "平局"
-            if self.player_score > self.computer_score:
-                winner = "玩家获胜"
-            elif self.computer_score > self.player_score:
-                winner = "电脑获胜"
-            messagebox.showinfo("游戏结束", f"{winner}!\n玩家得分: {self.player_score}\n电脑得分: {self.computer_score}")
-            self.master.quit()
+        try:
+            print("check_game_over")
+            if (not self.player_hand and not self.computer_hand) or (not self.find_any_match()):
+                self.update_ui()
+                print("game over", self.player_score, self.computer_score)
+                winner = "平局"
+                if self.player_score > self.computer_score:
+                    winner = "玩家获胜"
+                elif self.computer_score > self.player_score:
+                    winner = "电脑获胜"
+                # 显示游戏结束信息
+                self.show_message(f"游戏结束！{winner}!")
+                # 等待用户点击确认按钮
+                self.master.wait_window(self.master)
+                # 退出游戏
+                self.master.quit()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            # 处理错误，例如向用户显示错误消息
+            messagebox.showerror("Error", f"An error occurred: {e}")
+
     
     def find_any_match(self):
+        print("find_any_match")
         for card in self.player_hand + self.computer_hand:
             if self.find_match(card):
                 return True
